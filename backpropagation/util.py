@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 import random
 
+def txt2dataframe(dataset):
+    d = []
+    num_features = 0
+    num_outputs = 0
+    with open(dataset, 'r') as f:
+        for line in f.read().splitlines():
+            x, y = line.split(';')
+            x = [float(i) for i in x.split()]
+            y = [float(i) for i in y.split()]
+            num_features = len(x)
+            num_outputs = len(y)
+            d.append(x + y)
+    return pd.DataFrame(d, columns=['x'+str(i) for i in range(num_features)]+['y'+str(i) for i in range(num_outputs)])
+
 def evaluate(model, test_data, class_column, class_column_values):
     confusion_matrix = calculate_confusion_matrix(model, test_data, class_column, class_column_values)
     accuracy = calculate_accuracy(confusion_matrix, class_column_values)
