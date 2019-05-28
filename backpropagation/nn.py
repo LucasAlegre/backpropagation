@@ -8,14 +8,21 @@ def sigmoid(z):
 class NN:
 
     def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001):
+        """Feedforward Neural Network
+        
+        Args:
+            architecture (list/str): List of number of neurons per layer or string with .txt file.
+            regularization_factor (int, optional): Regularization Factor. Defaults to 0.
+            initial_weights (str, optional): txt file with initial weights. If None, weights are sampled from N(0,1). Defaults to None.
+            alpha (float, optional): Learning rate. Defaults to 0.001.
+        """
         if type(architecture) is str:
             self._build_architecture_from_file(architecture)
         else:
             self.architecture = architecture
             self.regularization_factor = regularization_factor
 
-        self.activations = []
-        self.weights = []
+        self._init_activations()
         if initial_weights is None:
             self._init_random_weights()
         else:
@@ -30,15 +37,13 @@ class NN:
         pass
 
     def propagate(self, x):
-        sigmoid_vec = np.vectorize(sigmoid)
-        activations = [np.append(1.0, x).reshape(-1,1)]
+        np.copyto(self.activations[0], np.append(1.0, x).reshape(-1,1))
         for layer in range(1, self.num_layers-1):
-            z = np.dot(self.weights[layer-1], activations[layer-1])
-            a = np.append(1.0, sigmoid_vec(z)).reshape(-1,1)
-            activations.append(a)
-        z = np.dot(self.weights[self.num_layers-2], activations[self.num_layers-2])
-        activations.append(sigmoid_vec(z))
-        self.activations = activations
+            np.dot(self.weights[layer-1], self.activations[layer-1], out=self.activations[layer][1:])
+            self.activations[layer] = sigmoid(self.activations[layer])
+            self.activations[layer][0][0] = 1.0
+        np.dot(self.weights[self.num_layers-2], self.activations[self.num_layers-2], out=self.activations[self.num_layers-1])
+        self.activations[self.num_layers-1] = sigmoid(self.activations[self.num_layers-1])
         print(self.activations)
         return self.activations[self.num_layers-1]
 
@@ -52,11 +57,20 @@ class NN:
     def num_layers(self):
         return len(self.architecture)
     
+    def _init_activations(self):
+        self.activations = []
+        for layer in range(self.num_layers-1):
+            self.activations.append(np.empty((self.architecture[layer]+1,1)))  # column vector with bias
+            self.activations[layer][0][0] = 1.0  # bias neuron
+        self.activations.append(np.empty((self.architecture[-1],1))) # output layer doesn't have bias
+    
     def _init_random_weights(self):
+        self.weights = []
         for layer in range(self.num_layers-1):
             self.weights.append(np.random.normal(size=(self.architecture[layer+1], self.architecture[layer]+1)))
 
     def _read_weights_from_file(self, file):
+        self.weights = []
         w = []
         with open(file, 'r') as f:
             for line in f:
