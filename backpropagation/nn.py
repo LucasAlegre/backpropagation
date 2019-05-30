@@ -17,21 +17,24 @@ class NN:
             alpha (float, optional): Learning rate. Defaults to 0.001.
         """
         if type(architecture) is str:
-            self._build_architecture_from_file(architecture)
+            self.build_architecture_from_file(architecture)
         else:
             self.architecture = architecture
             self.regularization_factor = regularization_factor
 
-        self._init_activations()
+        self.init_activations()
         if initial_weights is None:
-            self._init_random_weights()
+            self.init_random_weights()
         else:
-            self._read_weights_from_file(initial_weights)
-        
+            self.read_weights_from_file(initial_weights)
+    
         self.alpha = alpha
     
     def train(self, x, y):
-        print(self.cost(x,y))
+        n = len(x)
+        fx = [self.propagate(x[i]) for i in range(n)]
+        j = self.cost(fx, y)
+        print(j)
 
     def predict(self, instace):
         pass
@@ -44,19 +47,18 @@ class NN:
             self.activations[layer][0][0] = 1.0
         np.dot(self.weights[self.num_layers-2], self.activations[self.num_layers-2], out=self.activations[self.num_layers-1])
         self.activations[self.num_layers-1] = sigmoid(self.activations[self.num_layers-1])
-        return self.activations[self.num_layers-1]
+        return self.activations[self.num_layers-1].copy()
 
-    def cost(self, x, y):
-        n = len(x)
+    def cost(self, fx, y):
+        n = len(fx)
         j = 0.0
         for i in range(n):
-            fx = self.propagate(x[i])
-            j += (-y[i] * np.log(fx) - (1 - y[i]) * np.log(1 - fx)).sum()
-        j = j/n
-        s = sum(np.square(w).sum() for w in self.weights) * (self.regularization_factor/(2*n))
+            j += (-y[i] * np.log(fx[i]) - (1 - y[i]) * np.log(1 - fx[i])).sum()
+        j = j / n
+        s = np.sum(np.square(w).sum() for w in self.weights) * (self.regularization_factor/(2*n))
         return j + s
 
-    def _build_architecture_from_file(self, architecture):
+    def build_architecture_from_file(self, architecture):
         with open(architecture, 'r') as f:
             fileread = f.read().splitlines()
         self.regularization_factor = float(fileread[0])
@@ -66,19 +68,19 @@ class NN:
     def num_layers(self):
         return len(self.architecture)
     
-    def _init_activations(self):
+    def init_activations(self):
         self.activations = []
         for layer in range(self.num_layers-1):
             self.activations.append(np.empty((self.architecture[layer]+1,1)))  # column vector with bias
             self.activations[layer][0][0] = 1.0  # bias neuron
         self.activations.append(np.empty((self.architecture[-1],1))) # output layer doesn't have bias
     
-    def _init_random_weights(self):
+    def init_random_weights(self):
         self.weights = []
         for layer in range(self.num_layers-1):
             self.weights.append(np.random.normal(size=(self.architecture[layer+1], self.architecture[layer]+1)))
 
-    def _read_weights_from_file(self, file):
+    def read_weights_from_file(self, file):
         self.weights = []
         w = []
         with open(file, 'r') as f:
