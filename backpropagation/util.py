@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 import random
 
+
+def to_one_hot(column):
+    return pd.get_dummies(column).values
+
 def txt2dataframe(dataset):
     d = []
     num_features = 0

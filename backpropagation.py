@@ -2,7 +2,7 @@ import argparse
 import random
 import pandas as pd
 import numpy as np
-from backpropagation.util import stratified_k_cross_validation, txt2dataframe
+from backpropagation.util import stratified_k_cross_validation, txt2dataframe, to_one_hot
 from backpropagation.nn import NN
 
 if __name__ == '__main__':
@@ -34,8 +34,15 @@ if __name__ == '__main__':
     for column in args.drop:
         df.drop(column, inplace=True, axis=1)
 
+    if args.data.endswith('.txt'):
+        x = df.drop([c for c in df.columns if c.startswith('y')], axis=1).values
+        y = df.drop([c for c in df.columns if c.startswith('x')], axis=1).values
+    else:
+        x = df.drop(class_column, axis=1).values
+        y = to_one_hot(df[class_column])
+
     nn = NN(args.network, initial_weights=args.weights)
-    nn.propagate(df.values[0][:-1])
+    nn.train(x, y)
 
     #stratified_k_cross_validation(nn, df, class_column, k=args.num_folds)
     
