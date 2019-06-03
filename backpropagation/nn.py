@@ -31,10 +31,32 @@ class NN:
         self.alpha = alpha
     
     def train(self, x, y):
+        x = x[0]
+        y = y[0]
+
         n = len(x)
         fx = [self.propagate(x[i]) for i in range(n)]
         j = self.cost(fx, y)
+        self.backpropagate(fx, y)
+        print(self.deltas)
         print(j)
+
+    def backpropagate(self, fx, y):
+        # TODO: iterate until converge
+        self.calculate_deltas(fx, y)
+        # TODO: calculate gradients and update weights
+
+    def calculate_deltas(self, fx, y):
+        # Starts in 1 to ignore input layer
+        self.deltas = [np.empty((self.architecture[n], 1)) for n in range(1, self.num_layers)]
+        # Set output layer separately
+        self.deltas[-1] = fx - y
+        for layer in range(self.num_layers-2, 0, -1):
+            weights = self.weights[layer].reshape(-1, 1)[1:]
+            for neuron in range(len(self.deltas[layer-1])):
+                weights_times_deltas = weights[neuron] * self.deltas[layer]
+                activation_mult = self.activations[layer][neuron+1] * (1 - self.activations[layer][neuron+1])
+                self.deltas[layer-1][neuron] = weights_times_deltas * activation_mult
 
     def predict(self, instace):
         pass
