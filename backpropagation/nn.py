@@ -53,10 +53,9 @@ class NN:
         self.deltas[-1] = fx - y
         for layer in range(self.num_layers-2, 0, -1):
             weights = self.weights[layer].reshape(-1, 1)[1:]
-            for neuron in range(len(self.deltas[layer-1])):
-                weights_times_deltas = weights[neuron] * self.deltas[layer]
-                activation_mult = self.activations[layer][neuron+1] * (1 - self.activations[layer][neuron+1])
-                self.deltas[layer-1][neuron] = weights_times_deltas * activation_mult
+            activations_element_by_element = np.multiply(self.activations[layer][1:], (1 - self.activations[layer][1:]))
+            weights_dot_product_deltas = weights * self.deltas[layer]
+            self.deltas[layer - 1] = np.multiply(activations_element_by_element, weights_dot_product_deltas)
 
     def predict(self, instace):
         pass
