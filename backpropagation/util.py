@@ -13,8 +13,8 @@ def txt2dataframe(dataset):
     with open(dataset, 'r') as f:
         for line in f.read().splitlines():
             x, y = line.split(';')
-            x = [float(i) for i in x.split()]
-            y = [float(i) for i in y.split()]
+            x = [float(i) for i in x.replace(',',' ').split()]
+            y = [float(i) for i in y.replace(',',' ').split()]
             num_features = len(x)
             num_outputs = len(y)
             d.append(x + y)

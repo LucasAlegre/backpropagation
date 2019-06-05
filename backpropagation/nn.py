@@ -7,7 +7,7 @@ def sigmoid(z):
 
 class NN:
 
-    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001):
+    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001, verbose=False):
         """Feedforward Neural Network
         
         Args:
@@ -31,6 +31,7 @@ class NN:
             self.read_weights_from_file(initial_weights)
     
         self.alpha = alpha
+        self.verbose = verbose
     
     def predict(self, instace):
         pass
@@ -38,34 +39,45 @@ class NN:
     def train(self, x, y):
         num_examples = len(x)
         sum_loss = 0.0
-
         for i in range(num_examples):
-            fx = self.propagate(x[i])
-            loss = self.cost(fx, y[i])
+            xi, yi = x[i], y[i].reshape(-1,1)
+            fx = self.propagate(xi)
+            loss = self.cost(fx, yi)
             sum_loss += loss
-            print('Example {} loss: {}'.format(i, loss))
-            self.backpropagate(fx, y[i])
-
-        regularized_loss = (sum_loss/num_examples) + np.sum(np.square(w).sum() for w in self.weights) * (self.regularization_factor/(2*num_examples))
+            self.backpropagate(fx, yi)
+        mean_loss = (sum_loss/num_examples)
+        regularized_loss =  mean_loss + self.regularization_cost(num_examples)
         self.add_regularization_to_grads(num_examples)
         self.apply_grads()
+ 
         print('Total loss: ', regularized_loss)
         print('Gradients:', self.grads)
 
     def backpropagate(self, fx, y):
+        """Computes gradients using backpropagation
+        Args:
+            fx (np.array): NN predictions
+            y (np.array): True outputs
+        """
         self.calculate_deltas(fx, y)
         self.calcutate_grads()
 
     def calculate_deltas(self, fx, y):
         # Set output layer separately
-        self.deltas[-1] = fx - y
+        np.subtract(fx, y, out=self.deltas[-1])
         for layer in range(self.num_layers-2, 0, -1):
-            weights = self.weights[layer].reshape(-1, 1)[1:]
+            weights = self.weights[layer].transpose()[1:]
             activations_element_by_element = np.multiply(self.activations[layer][1:], (1 - self.activations[layer][1:]))
-            weights_dot_product_deltas = weights * self.deltas[layer]
-            np.multiply(activations_element_by_element, weights_dot_product_deltas, out=self.deltas[layer - 1])
+            weights_dot_product_deltas = np.dot(weights, self.deltas[layer])
+            np.multiply(activations_element_by_element, weights_dot_product_deltas, out=self.deltas[layer-1])
 
     def propagate(self, x):
+        """Propagates forward an instance, computing the activation of each neuron
+        Args:
+            x (np.array): Instance
+        Returns:
+            np.array: The output layer return
+        """
         np.copyto(self.activations[0], np.append(1.0, x).reshape(-1,1))
         for layer in range(1, self.num_layers-1):
             np.dot(self.weights[layer-1], self.activations[layer-1], out=self.activations[layer][1:])
@@ -76,13 +88,24 @@ class NN:
         return self.activations[self.num_layers-1]
 
     def cost(self, fx, y):
-        n = len(fx)
+        """Cross-entropy loss
+        Args:
+            fx (np.array): NN instance predictions
+            y (np.array): True outputs
+        Returns:
+            float: Logistic loss
+        """
         j = 0.0
-        for i in range(n):
-            j += (-y[i] * np.log(fx[i]) - (1 - y[i]) * np.log(1 - fx[i])).sum()
+        for i in range(self.architecture[-1]):
+            j += -((y[i] * np.log(fx[i]) + (1 - y[i]) * np.log(1 - fx[i])))
         return j
 
+    def regularization_cost(self, num_examples):
+        return (self.regularization_factor/(2*num_examples)) * np.sum(np.square(w[:, 1:]).sum() for w in self.weights)
+
     def calcutate_grads(self):
+        """Computes the gradient for each weight
+        """
         for i in range(self.num_layers-2, -1, -1):
             grad = np.dot(self.deltas[i], self.activations[i].reshape(1,-1))
             self.grads[i] += grad
@@ -91,6 +114,10 @@ class NN:
         pass
     
     def add_regularization_to_grads(self, num_examples):
+        """Sums the regularization times the weights to the gradients, and computes the mean gradient
+        Args:
+            num_examples (int): Number of instances used to compute the gradient
+        """
         for i in range(self.num_layers-2, -1, -1):
             p = self.weights[i].copy()
             p[:, 0] = 0  # ignore bias weights
