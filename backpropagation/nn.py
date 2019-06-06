@@ -38,20 +38,21 @@ class NN:
     
     def train(self, x, y):
         num_examples = len(x)
-        sum_loss = 0.0
-        for i in range(num_examples):
-            xi, yi = x[i], y[i].reshape(-1,1)
-            fx = self.propagate(xi)
-            loss = self.cost(fx, yi)
-            sum_loss += loss
-            self.backpropagate(fx, yi)
-        mean_loss = (sum_loss/num_examples)
-        regularized_loss =  mean_loss + self.regularization_cost(num_examples)
-        self.add_regularization_to_grads(num_examples)
-        self.apply_grads()
- 
-        print('Total loss: ', regularized_loss)
-        print('Gradients:', self.grads)
+        for _ in range(50):
+            sum_loss = 0.0
+            for i in range(num_examples):
+                xi, yi = x[i], y[i].reshape(-1,1)
+                fx = self.propagate(xi)
+                loss = self.cost(fx, yi)
+                sum_loss += loss
+                self.backpropagate(fx, yi)
+            mean_loss = (sum_loss/num_examples)
+            regularized_loss =  mean_loss + self.regularization_cost(num_examples)
+            self.add_regularization_to_grads(num_examples)
+            self.apply_grads()
+    
+            print('Total loss: ', regularized_loss)
+            print('Gradients:', self.grads)
 
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
@@ -111,7 +112,8 @@ class NN:
             self.grads[i] += grad
 
     def apply_grads(self):
-        pass
+        grads_with_learning_rate = np.multiply(self.grads, self.alpha)
+        self.weights = np.subtract(self.weights, grads_with_learning_rate)
     
     def add_regularization_to_grads(self, num_examples):
         """Sums the regularization times the weights to the gradients, and computes the mean gradient
