@@ -7,7 +7,7 @@ def sigmoid(z):
 
 class NN:
 
-    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001, verbose=False):
+    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001, verbose=False, momentum=True, beta=0.9):
         """Feedforward Neural Network
         
         Args:
@@ -15,6 +15,8 @@ class NN:
             regularization_factor (int, optional): Regularization Factor. Defaults to 0.
             initial_weights (str, optional): txt file with initial weights. If None, weights are sampled from N(0,1). Defaults to None.
             alpha (float, optional): Learning rate. Defaults to 0.001.
+            momentum (boolean, optional): Use or not the Momentum Method to correct weights. Defaults to True.
+            beta (float, optional): Efective direction rate used on the Momentum Method. Defaults to 0.9.
         """
         if type(architecture) is str:
             self.build_architecture_from_file(architecture)
@@ -32,6 +34,13 @@ class NN:
     
         self.alpha = alpha
         self.verbose = verbose
+        self.momentum = momentum
+        if momentum:
+            self.beta = beta
+            self.init_z_directions()
+            self.apply_grads = self.apply_grads_with_momentum_method
+        else:
+            self.apply_grads = self.apply_grads_with_usual_method
     
     def predict(self, instace):
         pass
@@ -52,7 +61,6 @@ class NN:
             self.apply_grads()
     
             print('Total loss: ', regularized_loss)
-            print('Gradients:', self.grads)
 
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
@@ -111,8 +119,14 @@ class NN:
             grad = np.dot(self.deltas[i], self.activations[i].reshape(1,-1))
             self.grads[i] += grad
 
-    def apply_grads(self):
+    def apply_grads_with_usual_method(self):
         grads_with_learning_rate = np.multiply(self.grads, self.alpha)
+        self.weights = np.subtract(self.weights, grads_with_learning_rate)
+
+    def apply_grads_with_momentum_method(self):
+        self.z_directions = np.multiply(self.z_directions, self.beta)
+        self.z_directions = np.add(self.z_directions, self.grads)
+        grads_with_learning_rate = np.multiply(self.z_directions, self.alpha)
         self.weights = np.subtract(self.weights, grads_with_learning_rate)
     
     def add_regularization_to_grads(self, num_examples):
@@ -153,6 +167,9 @@ class NN:
 
     def init_deltas(self):
         self.deltas = [np.empty((self.architecture[n], 1)) for n in range(1, self.num_layers)]
+
+    def init_z_directions(self):
+        self.z_directions = [np.zeros(layer.shape) for layer in self.weights]
 
     def init_grads(self):
         self.grads = []

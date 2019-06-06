@@ -17,7 +17,9 @@ if __name__ == '__main__':
     prs.add_argument('-drop', nargs='+',           required=False, default=[],                  help="Columns to drop from .csv.\n")
     prs.add_argument('-nn',   nargs='+',           required=True,                               help="Neural Network structure.\n")
     prs.add_argument('-w',    dest='weights',      required=False, default=None,                help="Initial weights.\n")
+    prs.add_argument('-b',    dest='beta',         required=False, default=0.9,                 help="Efective direction rate used on the Momentum Method.\n", type=float)
     prs.add_argument("-view", action='store_true', required=False, default=False,               help="View reural network image.\n")
+    prs.add_argument('-not-momentum', action='store_true', required=False, default=False,       help="Use momentum method.\n")
     args = prs.parse_args()
 
     random.seed(args.seed)
@@ -45,7 +47,7 @@ if __name__ == '__main__':
     else:
         architecture = [int(n) for n in args.nn]
 
-    nn = NN(architecture, initial_weights=args.weights)
+    nn = NN(architecture, initial_weights=args.weights, momentum=not args.not_momentum, beta=args.beta)
     nn.train(x, y)
 
     #stratified_k_cross_validation(nn, df, class_column, k=args.num_folds)
