@@ -6,6 +6,12 @@ import random
 def to_one_hot(column):
     return pd.get_dummies(column).values
 
+def parse_dataframe(df, class_column):
+    x = df.drop(class_column, axis=1) # remove class column
+    x = (x-x.min())/(x.max()-x.min()) # normalize
+    normalized_attr = x.fillna(0) # replace NaN's with 0's
+    return pd.concat([normalized_attr, df[class_column]], axis=1)
+
 def txt2dataframe(dataset):
     d = []
     num_features = 0
@@ -83,7 +89,7 @@ def stratified_k_cross_validation(model, data, class_column, k=10):
     #print('f1,acc,meanprec,meanrec')
     for _ in range(k):
         train, test = next(k_folds)
-        model.train(train, class_column)
+        model.train(train)
         f1_score = evaluate(model, test, class_column, class_column_values)
         scores.append(f1_score) 
 
