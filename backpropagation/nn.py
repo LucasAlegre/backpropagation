@@ -45,27 +45,31 @@ class NN:
     def predict(self, instace):
         pass
     
-    def train(self, x, y, amount_of_epochs, amount_of_batches=1):
-        num_examples = len(x)
-        batches_x = np.split(x, amount_of_batches)
-        batches_y = np.split(y, amount_of_batches)
-        for e in range(amount_of_epochs):
-            sum_loss = 0.0
-            for batch in range(amount_of_batches):
-                self.init_grads()
-                batch_size = len(batches_x[batch])
-                for i in range(batch_size):
+    def train(self, x, y, epochs=100, batch_size=1):
+        n = len(x)
+        batches_x = np.array_split(x, batch_size)
+        batches_y = np.array_split(y, batch_size)
+        for e in range(epochs):
+            epoch_loss = 0.0
+            for batch in range(batch_size):
+                sum_loss = 0.0
+                self.reset_grads()
+                true_batch_size = len(batches_x[batch])
+
+                for i in range(true_batch_size):
                     xi, yi = batches_x[batch][i], batches_y[batch][i].reshape(-1,1)
                     fx = self.propagate(xi)
-                    loss = self.cost(fx, yi)
-                    sum_loss += loss
+                    sum_loss += self.cost(fx, yi)
                     self.backpropagate(fx, yi)
-            mean_loss = (sum_loss/num_examples)
-            regularized_loss =  mean_loss + self.regularization_cost(num_examples)
-            self.add_regularization_to_grads(num_examples)
-            self.apply_grads()
+
+                mean_loss = sum_loss / true_batch_size
+                regularized_loss = mean_loss + self.regularization_cost(true_batch_size)
+                #print('Batch ' + str(batch+1) + ' - Total loss: ', regularized_loss)
+                epoch_loss += sum_loss
+                self.add_regularization_to_grads(true_batch_size)
+                self.apply_grads()
     
-            print(str(e + 1) + ' - Total loss: ', regularized_loss)
+            print('Epoch ' + str(e+1) + ' - Total loss: ', epoch_loss/n + self.regularization_cost(n))
 
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
@@ -109,10 +113,8 @@ class NN:
         Returns:
             float: Logistic loss
         """
-        j = 0.0
-        for i in range(self.architecture[-1]):
-            j += -((y[i] * np.log(fx[i]) + (1 - y[i]) * np.log(1 - fx[i])))
-        return j
+        j = -((y * np.log(fx) + (1 - y) * np.log(1 - fx)))
+        return j.sum()
 
     def regularization_cost(self, num_examples):
         return (self.regularization_factor/(2*num_examples)) * np.sum(np.square(w[:, 1:]).sum() for w in self.weights)
@@ -126,13 +128,13 @@ class NN:
 
     def apply_grads_with_usual_method(self):
         grads_with_learning_rate = np.multiply(self.grads, self.alpha)
-        self.weights = np.subtract(self.weights, grads_with_learning_rate)
+        self.weights -= grads_with_learning_rate
 
     def apply_grads_with_momentum_method(self):
         self.z_directions = np.multiply(self.z_directions, self.beta)
         self.z_directions = np.add(self.z_directions, self.grads)
         grads_with_learning_rate = np.multiply(self.z_directions, self.alpha)
-        self.weights = np.subtract(self.weights, grads_with_learning_rate)
+        self.weights -= grads_with_learning_rate
     
     def add_regularization_to_grads(self, num_examples):
         """Sums the regularization times the weights to the gradients, and computes the mean gradient
@@ -149,6 +151,13 @@ class NN:
     def num_layers(self):
         return len(self.architecture)
     
+    def reset_grads(self):
+        for g in self.grads:
+            g.fill(0.0)
+        if self.momentum:
+            for z in self.z_directions:
+                z.fill(0.0)
+
     def init_activations(self):
         self.activations = []
         for layer in range(self.num_layers-1):
