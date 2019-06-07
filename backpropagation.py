@@ -14,6 +14,8 @@ if __name__ == '__main__':
     prs.add_argument("-c",    dest="class_column", required=False, default='class',             help="The column of the .csv to be predicted.\n")
     prs.add_argument("-sep",  dest="sep",          required=False, default=',',                 help=".csv separator.\n")
     prs.add_argument("-k",    dest="num_folds",    required=False, default=10,                  help="The number of folds used on cross validation.\n", type=int)
+    prs.add_argument("-e",    dest="epochs",       required=True,                               help="Amount of epochs for training the neural network.", type=int)
+    prs.add_argument("-batches", dest="batches",   required=False, default=1,                   help="Size of the batches for training.", type=int)
     prs.add_argument('-drop', nargs='+',           required=False, default=[],                  help="Columns to drop from .csv.\n")
     prs.add_argument('-nn',   nargs='+',           required=True,                               help="Neural Network structure.\n")
     prs.add_argument('-w',    dest='weights',      required=False, default=None,                help="Initial weights.\n")
@@ -48,7 +50,7 @@ if __name__ == '__main__':
         architecture = [int(n) for n in args.nn]
 
     nn = NN(architecture, initial_weights=args.weights, momentum=not args.not_momentum, beta=args.beta)
-    nn.train(x, y)
+    nn.train(x, y, args.epochs, amount_of_batches=args.batches)
 
     #stratified_k_cross_validation(nn, df, class_column, k=args.num_folds)
     
