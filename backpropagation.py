@@ -54,7 +54,11 @@ if __name__ == '__main__':
     nn = NN(architecture, initial_weights=args.weights, momentum=not args.not_momentum, alpha=args.alpha, beta=args.beta,
             class_column=class_column, class_values=class_values, epochs=args.epochs, batch_size=args.batch_size)
 
-    stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
+
+    if args.data.endswith('.txt'):
+        nn.train(x, y)
+    else:
+        stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
     
     if args.view:
         nn.view_architecture('NeuralNetwork')
