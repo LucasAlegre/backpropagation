@@ -1,4 +1,5 @@
 import numpy as np 
+from backpropagation.util import to_one_hot
 
 
 def sigmoid(z):
@@ -7,7 +8,8 @@ def sigmoid(z):
 
 class NN:
 
-    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001, verbose=False, momentum=True, beta=0.9):
+    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001, verbose=False,
+                       momentum=True, beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=1):
         """Feedforward Neural Network
         
         Args:
@@ -24,34 +26,50 @@ class NN:
             self.architecture = architecture
             self.regularization_factor = regularization_factor
 
-        self.init_activations()
-        self.init_deltas()
-        self.init_grads()
-        if initial_weights is None:
-            self.init_random_weights()
-        else:
-            self.read_weights_from_file(initial_weights)
-    
+        self.initial_weights = initial_weights
         self.alpha = alpha
+        self.epochs = epochs
+        self.batch_size = batch_size
         self.verbose = verbose
         self.momentum = momentum
-        if momentum:
+    
+        self.reset()
+
+        if self.momentum:
             self.beta = beta
-            self.init_z_directions()
             self.apply_grads = self.apply_grads_with_momentum_method
         else:
             self.apply_grads = self.apply_grads_with_usual_method
+
+        self.class_column = class_column
+        self.class_values = class_values
+
+    def reset(self):
+        self.init_activations()
+        self.init_deltas()
+        self.init_grads()
+        self.init_weights()
+
+        if self.momentum:
+            self.init_z_directions()
     
-    def predict(self, instace):
-        pass
+    def predict(self, instance):
+        instance = instance.drop(labels=[self.class_column]).values
+        instance = np.array(instance, dtype='float64')
+        activations = list(self.propagate(instance))
+        max_index = activations.index(max(activations))
+        return self.class_values[max_index]
     
-    def train(self, x, y, epochs=100, batch_size=1):
+    def train(self, data):
+        self.reset()
+        x = data.drop(self.class_column, axis=1).values
+        y = to_one_hot(data[self.class_column])
         n = len(x)
-        batches_x = np.array_split(x, batch_size)
-        batches_y = np.array_split(y, batch_size)
-        for e in range(epochs):
+        batches_x = np.array_split(x, self.batch_size)
+        batches_y = np.array_split(y, self.batch_size)
+        for e in range(self.epochs):
             epoch_loss = 0.0
-            for batch in range(batch_size):
+            for batch in range(self.batch_size):
                 sum_loss = 0.0
                 self.reset_grads()
                 true_batch_size = len(batches_x[batch])
@@ -164,6 +182,12 @@ class NN:
             self.activations.append(np.empty((self.architecture[layer]+1,1)))  # column vector with bias
             self.activations[layer][0][0] = 1.0  # bias neuron
         self.activations.append(np.empty((self.architecture[-1],1))) # output layer doesn't have bias
+
+    def init_weights(self):
+        if self.initial_weights is None:
+            self.init_random_weights()
+        else:
+            self.read_weights_from_file(self.initial_weights)
     
     def init_random_weights(self):
         self.weights = []

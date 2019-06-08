@@ -2,7 +2,7 @@ import argparse
 import random
 import pandas as pd
 import numpy as np
-from backpropagation.util import stratified_k_cross_validation, txt2dataframe, to_one_hot
+from backpropagation.util import stratified_k_cross_validation, txt2dataframe, to_one_hot, parse_dataframe
 from backpropagation.nn import NN
 
 if __name__ == '__main__':
@@ -40,20 +40,21 @@ if __name__ == '__main__':
     if args.data.endswith('.txt'):  # naive dataset txt
         x = df.drop([c for c in df.columns if c.startswith('y')], axis=1).values
         y = df.drop([c for c in df.columns if c.startswith('x')], axis=1).values
+        class_values = None
     else:
-        x = df.drop(class_column, axis=1).values # remove class column
-        x = (x-x.min())/(x.max()-x.min()) # normalize
-        y = to_one_hot(df[class_column]) # one-hot encode class column
+        normalized_df = parse_dataframe(df, class_column)
+        class_values = pd.get_dummies(df[class_column]).columns.values
+
 
     if args.nn[0].endswith('.txt'):
         architecture = args.nn[0]
     else:
         architecture = [int(n) for n in args.nn]
 
-    nn = NN(architecture, initial_weights=args.weights, momentum=not args.not_momentum, alpha=args.alpha, beta=args.beta)
-    nn.train(x, y, epochs=args.epochs, batch_size=args.batch_size)
+    nn = NN(architecture, initial_weights=args.weights, momentum=not args.not_momentum, alpha=args.alpha, beta=args.beta,
+            class_column=class_column, class_values=class_values, epochs=args.epochs, batch_size=args.batch_size)
 
-    #stratified_k_cross_validation(nn, df, class_column, k=args.num_folds)
+    stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
     
     if args.view:
         nn.view_architecture('NeuralNetwork')
