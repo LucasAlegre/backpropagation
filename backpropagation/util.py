@@ -89,7 +89,9 @@ def stratified_k_cross_validation(model, data, class_column, k=10):
     #print('f1,acc,meanprec,meanrec')
     for _ in range(k):
         train, test = next(k_folds)
-        model.train(train)
+        x = train.drop(class_column, axis=1).values
+        y = to_one_hot(train[class_column])
+        model.train(x, y)
         f1_score = evaluate(model, test, class_column, class_column_values)
         scores.append(f1_score) 
 

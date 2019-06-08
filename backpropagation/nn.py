@@ -60,10 +60,8 @@ class NN:
         max_index = activations.index(max(activations))
         return self.class_values[max_index]
     
-    def train(self, data):
+    def train(self, x, y):
         self.reset()
-        x = data.drop(self.class_column, axis=1).values
-        y = to_one_hot(data[self.class_column])
         n = len(x)
         batches_x = np.array_split(x, self.batch_size)
         batches_y = np.array_split(y, self.batch_size)
