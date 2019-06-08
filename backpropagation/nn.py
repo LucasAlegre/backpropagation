@@ -170,9 +170,6 @@ class NN:
     def reset_grads(self):
         for g in self.grads:
             g.fill(0.0)
-        if self.momentum:
-            for z in self.z_directions:
-                z.fill(0.0)
 
     def init_activations(self):
         self.activations = []
