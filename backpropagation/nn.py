@@ -1,4 +1,5 @@
 import numpy as np 
+from tqdm import tqdm
 from backpropagation.util import to_one_hot
 
 
@@ -8,8 +9,8 @@ def sigmoid(z):
 
 class NN:
 
-    def __init__(self, architecture, regularization_factor=0, initial_weights=None, alpha=0.001, verbose=False,
-                       momentum=True, beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=1):
+    def __init__(self, architecture, regularization_factor=0.0, initial_weights=None, alpha=0.001, verbose=False,
+                       momentum=True, beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=None):
         """Feedforward Neural Network
         
         Args:
@@ -49,7 +50,6 @@ class NN:
         self.init_deltas()
         self.init_grads()
         self.init_weights()
-
         if self.momentum:
             self.init_z_directions()
     
@@ -63,11 +63,14 @@ class NN:
     def train(self, x, y):
         self.reset()
         n = len(x)
-        batches_x = np.array_split(x, self.batch_size)
-        batches_y = np.array_split(y, self.batch_size)
-        for e in range(self.epochs):
+        batch_size = self.batch_size if self.batch_size is not None else n
+        num_batches = n // batch_size
+        batches_x = np.array_split(x, num_batches)
+        batches_y = np.array_split(y, num_batches)
+        epochs = tqdm(range(self.epochs))
+        for e in epochs:
             epoch_loss = 0.0
-            for batch in range(self.batch_size):
+            for batch in range(num_batches):
                 sum_loss = 0.0
                 self.reset_grads()
                 true_batch_size = len(batches_x[batch])
@@ -78,14 +81,12 @@ class NN:
                     sum_loss += self.cost(fx, yi)
                     self.backpropagate(fx, yi)
 
-                mean_loss = sum_loss / true_batch_size
-                regularized_loss = mean_loss + self.regularization_cost(true_batch_size)
-                #print('Batch ' + str(batch+1) + ' - Total loss: ', regularized_loss)
+                regularized_loss = sum_loss/true_batch_size + self.regularization_cost(true_batch_size)
                 epoch_loss += sum_loss
                 self.add_regularization_to_grads(true_batch_size)
                 self.apply_grads()
     
-            print('Epoch ' + str(e+1) + ' - Total loss: ', epoch_loss/n + self.regularization_cost(n))
+            epochs.set_description('Epoch {}: total loss = {:.5f}'.format(e+1, epoch_loss/n + self.regularization_cost(n)))
 
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
@@ -101,9 +102,8 @@ class NN:
         np.subtract(fx, y, out=self.deltas[-1])
         for layer in range(self.num_layers-2, 0, -1):
             weights = self.weights[layer].transpose()[1:]
-            activations_element_by_element = np.multiply(self.activations[layer][1:], (1 - self.activations[layer][1:]))
-            weights_dot_product_deltas = np.dot(weights, self.deltas[layer])
-            np.multiply(activations_element_by_element, weights_dot_product_deltas, out=self.deltas[layer-1])
+            uncertainty = np.multiply(self.activations[layer][1:], (1 - self.activations[layer][1:]))
+            np.multiply(np.dot(weights, self.deltas[layer]), uncertainty, out=self.deltas[layer-1])
 
     def propagate(self, x):
         """Propagates forward an instance, computing the activation of each neuron
@@ -143,14 +143,12 @@ class NN:
             self.grads[i] += grad
 
     def apply_grads_with_usual_method(self):
-        grads_with_learning_rate = np.multiply(self.grads, self.alpha)
-        self.weights -= grads_with_learning_rate
+        self.weights -= self.alpha * self.grads
 
     def apply_grads_with_momentum_method(self):
-        self.z_directions = np.multiply(self.z_directions, self.beta)
-        self.z_directions = np.add(self.z_directions, self.grads)
-        grads_with_learning_rate = np.multiply(self.z_directions, self.alpha)
-        self.weights -= grads_with_learning_rate
+        self.z_directions *= self.beta
+        self.z_directions += (1 - self.beta) * self.grads
+        self.weights -=  self.alpha * self.z_directions
     
     def add_regularization_to_grads(self, num_examples):
         """Sums the regularization times the weights to the gradients, and computes the mean gradient
@@ -185,29 +183,23 @@ class NN:
             self.read_weights_from_file(self.initial_weights)
     
     def init_random_weights(self):
-        self.weights = []
-        for layer in range(self.num_layers-1):
-            self.weights.append(np.random.normal(size=(self.architecture[layer+1], self.architecture[layer]+1)))
+        self.weights = np.array([np.random.normal(size=(self.architecture[layer+1], self.architecture[layer]+1)) for layer in range(self.num_layers-1)])
 
     def read_weights_from_file(self, file):
-        self.weights = []
         w = []
         with open(file, 'r') as f:
             for line in f:
                 w.append([float(x) for x in line.replace(';',',').split(',')])
-        for layer in range(self.num_layers-1):
-            self.weights.append(np.asmatrix(w[layer]).reshape(self.architecture[layer+1], self.architecture[layer]+1))
+        self.weights = np.array([np.asmatrix(w[layer]).reshape(self.architecture[layer+1], self.architecture[layer]+1) for layer in range(self.num_layers-1)])
 
     def init_deltas(self):
-        self.deltas = [np.empty((self.architecture[n], 1)) for n in range(1, self.num_layers)]
+        self.deltas = np.array([np.empty((self.architecture[n], 1)) for n in range(1, self.num_layers)])
 
     def init_z_directions(self):
-        self.z_directions = [np.zeros(layer.shape) for layer in self.weights]
+        self.z_directions = np.array([np.zeros(layer.shape) for layer in self.weights])
 
     def init_grads(self):
-        self.grads = []
-        for layer in range(self.num_layers-1):
-            self.grads.append(np.zeros((self.architecture[layer+1], self.architecture[layer]+1)))
+        self.grads = np.array([np.zeros((self.architecture[layer+1], self.architecture[layer]+1)) for layer in range(self.num_layers-1)])
 
     def build_architecture_from_file(self, architecture):
         with open(architecture, 'r') as f:
