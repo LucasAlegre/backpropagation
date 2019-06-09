@@ -23,7 +23,7 @@ if __name__ == '__main__':
     prs.add_argument('-beta',           dest='beta',          required=False, default=0.9,                 help="Efective direction rate used on the Momentum Method.\n", type=float)
     prs.add_argument('-regularization', dest='regularization',required=False, default=0.0,                 help="Regularization factor.\n", type=float)
     prs.add_argument("-view",           action='store_true',  required=False, default=False,               help="View reural network image.\n")
-    prs.add_argument('-not-momentum',   action='store_true',  required=False, default=False,               help="Use momentum method.\n")
+    prs.add_argument('-opt',            dest='opt',           required=False, default='SGD',               help="Optimizer [SGD, Momentum, Adam].\n")
     args = prs.parse_args()
 
     random.seed(args.seed)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     nn = NN(architecture=architecture, 
             initial_weights=args.weights, 
-            momentum=not args.not_momentum,
+            optimizer=args.opt,
             alpha=args.alpha, 
             beta=args.beta,
             regularization_factor=args.regularization,

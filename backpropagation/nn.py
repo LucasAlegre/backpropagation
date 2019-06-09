@@ -10,7 +10,7 @@ def sigmoid(z):
 class NN:
 
     def __init__(self, architecture, regularization_factor=0.0, initial_weights=None, alpha=0.001, verbose=False,
-                       momentum=True, beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=None):
+                       optimizer='Adam', beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=None):
         """Feedforward Neural Network
         
         Args:
@@ -32,15 +32,19 @@ class NN:
         self.epochs = epochs
         self.batch_size = batch_size
         self.verbose = verbose
-        self.momentum = momentum
+        self.optimizer = optimizer
     
         self.reset()
 
-        if self.momentum:
+        if self.optimizer == 'Momentum':
             self.beta = beta
             self.apply_grads = self.apply_grads_with_momentum_method
+        elif self.optimizer == 'SGD':
+            self.apply_grads = self.apply_grads_with_sgd
+        elif self.optimizer == 'Adam':
+            self.apply_grads = self.apply_grads_with_adam
         else:
-            self.apply_grads = self.apply_grads_with_usual_method
+            exit("Optimizer not found!")
 
         self.class_column = class_column
         self.class_values = class_values
@@ -50,8 +54,10 @@ class NN:
         self.init_deltas()
         self.init_grads()
         self.init_weights()
-        if self.momentum:
+        if self.optimizer == 'Momentum':
             self.init_z_directions()
+        elif self.optimizer == 'Adam':
+            self.init_adam()
     
     def predict(self, instance):
         instance = instance.drop(labels=[self.class_column]).values
@@ -142,14 +148,33 @@ class NN:
             grad = np.dot(self.deltas[i], self.activations[i].reshape(1,-1))
             self.grads[i] += grad
 
-    def apply_grads_with_usual_method(self):
+    def apply_grads_with_sgd(self):
         self.weights -= self.alpha * self.grads
 
     def apply_grads_with_momentum_method(self):
         self.z_directions *= self.beta
         self.z_directions += (1 - self.beta) * self.grads
-        self.weights -=  self.alpha * self.z_directions
+        self.weights -= self.alpha * self.z_directions
     
+    def apply_grads_with_adam(self):
+        self.t += 1
+        beta_1 = 0.9
+        beta_2 = 0.999
+        epsilon = 1e-8
+
+        self.m_t = beta_1 * self.m_t + (1-beta_1) * self.grads	      # updates the moving averages of the gradient
+        self.v_t = beta_2 * self.v_t + (1-beta_2) * (self.grads**2)	  # updates the moving averages of the squared gradient
+
+        m_cap = self.m_t/(1-(beta_1**self.t))		# calculates the bias-corrected estimates
+        v_cap = self.v_t/(1-(beta_2**self.t))		# calculates the bias-corrected estimates
+        sqrt_v = np.array([np.sqrt(x) for x in v_cap])
+        self.weights -= (self.alpha*m_cap) / (sqrt_v + epsilon)
+
+    def init_adam(self):
+        self.t = 0
+        self.m_t = np.array([np.zeros((self.architecture[layer+1], self.architecture[layer]+1), dtype='float') for layer in range(self.num_layers-1)])
+        self.v_t = np.array([np.zeros((self.architecture[layer+1], self.architecture[layer]+1), dtype='float') for layer in range(self.num_layers-1)])
+
     def add_regularization_to_grads(self, num_examples):
         """Sums the regularization times the weights to the gradients, and computes the mean gradient
         Args:
