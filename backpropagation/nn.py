@@ -66,14 +66,15 @@ class NN:
         max_index = activations.index(max(activations))
         return self.class_values[max_index]
     
-    def train(self, x, y):
-        self.reset()
+    def train(self, x, y, x_test, y_test):
+        train_loss, test_loss = [], []  
         n = len(x)
         batch_size = self.batch_size if self.batch_size is not None else n
         num_batches = n // batch_size
         batches_x = np.array_split(x, num_batches)
         batches_y = np.array_split(y, num_batches)
         epochs = tqdm(range(self.epochs))
+        self.reset()
         for e in epochs:
             epoch_loss = 0.0
             for batch in range(num_batches):
@@ -91,8 +92,16 @@ class NN:
                 epoch_loss += sum_loss
                 self.add_regularization_to_grads(true_batch_size)
                 self.apply_grads()
-    
-            epochs.set_description('Epoch {}: total loss = {:.5f}'.format(e+1, epoch_loss/n + self.regularization_cost(n)))
+
+            testloss = 0.0
+            for i in range(len(x_test)):
+                xi, yi = x_test[i], y_test[i].reshape(-1,1)
+                fx = self.propagate(xi)
+                testloss += self.cost(fx, yi)
+            test_loss.append(testloss/len(x_test) + self.regularization_cost(len(x_test)))
+            train_loss.append(epoch_loss/n + self.regularization_cost(n))
+
+            epochs.set_description('Epoch {}: train loss = {:.5f} test loss = {:.5f}'.format(e+1, train_loss[-1], test_loss[-1]))
 
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
