@@ -63,7 +63,7 @@ if __name__ == '__main__':
             batch_size=args.batch_size)
 
     if args.data.endswith('.txt'):
-        nn.train(x, y)
+        nn.train_numerically(x, y)
     else:
         stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
     

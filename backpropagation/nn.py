@@ -103,6 +103,49 @@ class NN:
 
             epochs.set_description('Epoch {}: train loss = {:.5f} test loss = {:.5f}'.format(e+1, train_loss[-1], test_loss[-1]))
 
+    def train_numerically(self, x, y):
+        n = len(x)
+        batch_size = self.batch_size if self.batch_size is not None else n
+        num_batches = n // batch_size
+        batches_x = np.array_split(x, num_batches)
+        batches_y = np.array_split(y, num_batches)
+        self.reset()
+        for e in range(self.epochs):
+            epoch_loss = 0.0
+            for batch in range(num_batches):
+                sum_loss = 0.0
+                self.reset_grads()
+                true_batch_size = len(batches_x[batch])
+                for i in range(true_batch_size):
+                    xi, yi = batches_x[batch][i], batches_y[batch][i].reshape(-1,1)
+                    self.calculate_numerical_gradients(xi, yi)
+                self.add_regularization_to_grads(true_batch_size)
+                self.apply_grads()
+        print(self.grads)
+
+    
+    def calculate_numerical_gradients(self, x, y):
+        epsilon = 1e-8
+        for layer in range(len(self.weights)):
+            i, dims = self.weights[layer].shape
+            for neuron in range(dims):
+                for next_layer in range(i):
+                    # Cost summing epsilon
+                    self.weights[layer][next_layer, neuron] += epsilon
+                    plus_epsilon_propagation = self.propagate(x)
+                    plus_epsilon_cost = self.cost(plus_epsilon_propagation, y)
+                    # Cost subtracting epsilon
+                    self.weights[layer][next_layer, neuron] -= (2 * epsilon)
+                    less_epsilon_propagation = self.propagate(x)
+                    less_epsilon_cost = self.cost(less_epsilon_propagation, y)
+                    # Correct weight to initial value
+                    self.weights[layer][next_layer, neuron] += epsilon
+                    # Calculate gradient
+                    gradient = (plus_epsilon_cost - less_epsilon_cost) / (2 * epsilon)
+                    # Update gradient
+                    self.grads[layer][next_layer][neuron] += gradient
+
+
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
         Args:
@@ -120,19 +163,20 @@ class NN:
             uncertainty = np.multiply(self.activations[layer][1:], (1 - self.activations[layer][1:]))
             np.multiply(np.dot(weights, self.deltas[layer]), uncertainty, out=self.deltas[layer-1])
 
-    def propagate(self, x):
+    def propagate(self, x, weights=None):
         """Propagates forward an instance, computing the activation of each neuron
         Args:
             x (np.array): Instance
         Returns:
             np.array: The output layer return
         """
+        weights = self.weights if weights == None else weights
         np.copyto(self.activations[0], np.append(1.0, x).reshape(-1,1))
         for layer in range(1, self.num_layers-1):
-            np.dot(self.weights[layer-1], self.activations[layer-1], out=self.activations[layer][1:])
+            np.dot(weights[layer-1], self.activations[layer-1], out=self.activations[layer][1:])
             self.activations[layer] = sigmoid(self.activations[layer])
             self.activations[layer][0][0] = 1.0
-        np.dot(self.weights[self.num_layers-2], self.activations[self.num_layers-2], out=self.activations[self.num_layers-1])
+        np.dot(weights[self.num_layers-2], self.activations[self.num_layers-2], out=self.activations[self.num_layers-1])
         self.activations[self.num_layers-1] = sigmoid(self.activations[self.num_layers-1])
         return self.activations[self.num_layers-1]
 
