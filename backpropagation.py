@@ -23,6 +23,7 @@ if __name__ == '__main__':
     prs.add_argument('-beta',           dest='beta',          required=False, default=0.9,                 help="Efective direction rate used on the Momentum Method.\n", type=float)
     prs.add_argument('-regularization', dest='regularization',required=False, default=0.0,                 help="Regularization factor.\n", type=float)
     prs.add_argument("-view",           action='store_true',  required=False, default=False,               help="View reural network image.\n")
+    prs.add_argument("-numerical",      action='store_true',  required=False, default=False,               help="Calculate the gradients numerically.\n")
     prs.add_argument('-opt',            dest='opt',           required=False, default='SGD',               help="Optimizer [SGD, Momentum, Adam].\n")
     args = prs.parse_args()
 
@@ -62,10 +63,13 @@ if __name__ == '__main__':
             epochs=args.epochs, 
             batch_size=args.batch_size)
 
-    if args.data.endswith('.txt'):
-        nn.train(x, y)
+    if args.numerical:
+        nn.train_numerically(x, y)
     else:
-        stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
+        if args.data.endswith('.txt'):
+            nn.train(x, y, x, y)
+        else:
+            stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
     
     if args.view:
         nn.view_architecture('NeuralNetwork')
