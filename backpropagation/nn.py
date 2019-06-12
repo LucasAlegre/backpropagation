@@ -163,20 +163,19 @@ class NN:
             uncertainty = np.multiply(self.activations[layer][1:], (1 - self.activations[layer][1:]))
             np.multiply(np.dot(weights, self.deltas[layer]), uncertainty, out=self.deltas[layer-1])
 
-    def propagate(self, x, weights=None):
+    def propagate(self, x):
         """Propagates forward an instance, computing the activation of each neuron
         Args:
             x (np.array): Instance
         Returns:
             np.array: The output layer return
         """
-        weights = self.weights if weights == None else weights
         np.copyto(self.activations[0], np.append(1.0, x).reshape(-1,1))
         for layer in range(1, self.num_layers-1):
-            np.dot(weights[layer-1], self.activations[layer-1], out=self.activations[layer][1:])
+            np.dot(self.weights[layer-1], self.activations[layer-1], out=self.activations[layer][1:])
             self.activations[layer] = sigmoid(self.activations[layer])
             self.activations[layer][0][0] = 1.0
-        np.dot(weights[self.num_layers-2], self.activations[self.num_layers-2], out=self.activations[self.num_layers-1])
+        np.dot(self.weights[self.num_layers-2], self.activations[self.num_layers-2], out=self.activations[self.num_layers-1])
         self.activations[self.num_layers-1] = sigmoid(self.activations[self.num_layers-1])
         return self.activations[self.num_layers-1]
 
