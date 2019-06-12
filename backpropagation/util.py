@@ -35,8 +35,6 @@ def evaluate(model, test_data, class_column, class_column_values):
     mean_recall = np.mean(list(recall.values()))
     f1_score = f1_measure(mean_precision, mean_recall)
 
-    #print(','.join(str(x) for x in [f1_score,accuracy,mean_precision,mean_recall]))
-
     print(32*'=')
     print('Accuracy: {:.4f}'.format(accuracy))
     for value in class_column_values:
@@ -47,7 +45,7 @@ def evaluate(model, test_data, class_column, class_column_values):
     print('F1-score: {:.4f}'.format(f1_score))
     print(32*'=')
 
-    return f1_score
+    return {'f1_score': f1_score, 'accuracy': accuracy, 'mean-precision': mean_precision, 'mean-recall': mean_recall}
 
 def bootstrap(data):
     bootstrap = data.sample(n=len(data), replace=True)
@@ -82,20 +80,26 @@ def stratified_k_cross_fold(data, class_column, k=10):
             test = test.append(test_c)
         yield train, test
 
-def stratified_k_cross_validation(model, data, class_column, k=10):
+def stratified_k_cross_validation(model, data, class_column, k=10, log_name=None):
     class_column_values = data[class_column].unique()
     k_folds = stratified_k_cross_fold(data, class_column, k)
     scores = []
     #print('f1,acc,meanprec,meanrec')
-    for _ in range(k):
+    for fold in range(k):
         train, test = next(k_folds)
         x = train.drop(class_column, axis=1).values
         y = to_one_hot(train[class_column])
         x_test = test.drop(class_column, axis=1).values
         y_test = to_one_hot(test[class_column])
-        model.train(x, y, x_test, y_test)
-        f1_score = evaluate(model, test, class_column, class_column_values)
-        scores.append(f1_score) 
+
+        train_loss, test_loss = model.train(x, y, x_test, y_test)
+        evaluation = evaluate(model, test, class_column, class_column_values)
+        scores.append(evaluation['f1_score'])
+
+        if log_name is not None:
+            evaluation.update({'train-loss': train_loss, 'test-loss': test_loss, 'epoch': [i for i in range(1, len(train_loss)+1)]})
+            df = pd.DataFrame(evaluation)
+            df.to_csv(log_name+'_fold'+str(fold)+'.csv', index=False)
 
     print('Average F1-score: {:.4f}'.format(np.mean(scores)))
     print('Standard deviation: {:.4f}'.format(np.std(scores)))

@@ -103,6 +103,8 @@ class NN:
 
             epochs.set_description('Epoch {}: train loss = {:.5f} test loss = {:.5f}'.format(e+1, train_loss[-1], test_loss[-1]))
 
+        return train_loss, test_loss
+
     def train_numerically(self, x, y):
         n = len(x)
         batch_size = self.batch_size if self.batch_size is not None else n
@@ -122,7 +124,6 @@ class NN:
                 self.add_regularization_to_grads(true_batch_size)
                 self.apply_grads()
         print(self.grads)
-
     
     def calculate_numerical_gradients(self, x, y):
         epsilon = 1e-8

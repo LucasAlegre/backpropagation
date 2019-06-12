@@ -1,3 +1,4 @@
+import os
 import argparse
 import random
 import pandas as pd
@@ -22,9 +23,9 @@ if __name__ == '__main__':
     prs.add_argument('-alpha',          dest='alpha',         required=False, default=0.01,                help="Learning rate.\n", type=float)
     prs.add_argument('-beta',           dest='beta',          required=False, default=0.9,                 help="Efective direction rate used on the Momentum Method.\n", type=float)
     prs.add_argument('-regularization', dest='regularization',required=False, default=0.0,                 help="Regularization factor.\n", type=float)
-    prs.add_argument("-view",           action='store_true',  required=False, default=False,               help="View reural network image.\n")
     prs.add_argument("-numerical",      action='store_true',  required=False, default=False,               help="Calculate the gradients numerically.\n")
     prs.add_argument('-opt',            dest='opt',           required=False, default='SGD',               help="Optimizer [SGD, Momentum, Adam].\n")
+    prs.add_argument("-log",            action='store_true',  required=False, default=False,               help="Generate log file.\n")
     args = prs.parse_args()
 
     random.seed(args.seed)
@@ -69,7 +70,5 @@ if __name__ == '__main__':
         if args.data.endswith('.txt'):
             nn.train(x, y, x, y)
         else:
-            stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds)
-    
-    if args.view:
-        nn.view_architecture('NeuralNetwork')
+            log_name = 'logs/{}_{}_a{}_{}'.format(os.path.basename(args.data), args.opt, args.alpha, args.nn) if args.log else None
+            stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds, log_name=log_name)
