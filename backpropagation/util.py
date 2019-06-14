@@ -6,9 +6,12 @@ import random
 def to_one_hot(column):
     return pd.get_dummies(column).values
 
-def parse_dataframe(df, class_column):
+def parse_dataframe(df, class_column, normalize='minmax'):
     x = df.drop(class_column, axis=1) # remove class column
-    x = (x-x.min())/(x.max()-x.min()) # normalize
+    if normalize == 'minmax':
+        x = (x-x.min())/(x.max()-x.min()) # normalize
+    elif normalize == 'mean':
+        x = (x-x.mean())/x.std()
     normalized_attr = x.fillna(0) # replace NaN's with 0's
     return pd.concat([normalized_attr, df[class_column]], axis=1)
 

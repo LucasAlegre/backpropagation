@@ -9,25 +9,35 @@ import glob
 sns.set(rc={'figure.figsize':(12,9)})
 sns.set(font_scale = 2)
 
-bmap = brewer2mpl.get_map('Set2', 'qualitative', 7)
+bmap = brewer2mpl.get_map('Set3', 'qualitative', 7)
 colors = bmap.mpl_colors
 
 prs = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-prs.add_argument('-f', required=False, help="csv file\n")
+prs.add_argument('-f', nargs='+', required=False, help="csv file\n")
 args = prs.parse_args()
 
-main_df = pd.DataFrame()
-for f in glob.glob(args.f+'*'):
-    df = pd.read_csv(f)
-    if main_df.empty:
-        main_df = df
-    else:
-        main_df = pd.concat((main_df, df))
-
-print(main_df)
 plt.figure()
-plt.plot(df.groupby('epoch').mean()['train-loss'])
-plt.plot(df.groupby('epoch').mean()['test-loss'])
+
+for file in args.f:
+    main_df = pd.DataFrame()
+    for f in glob.glob(file+'*'):
+        df = pd.read_csv(f)
+        if main_df.empty:
+            main_df = df
+        else:
+            main_df = pd.concat((main_df, df))
+
+    mean_trainloss = main_df.groupby('epoch').mean()['train-loss']
+    std_trainloss = main_df.groupby('epoch').std()['train-loss']
+    mean_testloss = main_df.groupby('epoch').mean()['test-loss']
+    std_testloss = main_df.groupby('epoch').std()['test-loss']
+
+    epoch = main_df.groupby('epoch').epoch.mean().keys()
+    plt.plot(mean_trainloss)
+    plt.fill_between(epoch, mean_trainloss + std_trainloss, mean_trainloss - std_trainloss, alpha=0.3)
+    plt.plot(mean_testloss)
+    plt.fill_between(epoch, mean_testloss + std_testloss, mean_testloss - std_testloss, alpha=0.3)
+
 plt.show()
 
 """ 

@@ -16,11 +16,11 @@ if __name__ == '__main__':
     prs.add_argument("-sep",            dest="sep",           required=False, default=',',                 help=".csv separator.\n")
     prs.add_argument("-k",              dest="num_folds",     required=False, default=10,                  help="The number of folds used on cross validation.\n", type=int)
     prs.add_argument("-e",              dest="epochs",        required=False, default=100,                 help="Amount of epochs for training the neural network.", type=int)
-    prs.add_argument("-batch-size",     dest="batch_size",    required=False, default=None,                help="Size of the batches for training.", type=int)
+    prs.add_argument("-mb",             dest="batch_size",    required=False, default=None,                help="Size of the batches for training.", type=int)
     prs.add_argument('-drop',           nargs='+',            required=False, default=[],                  help="Columns to drop from .csv.\n")
     prs.add_argument('-nn',             nargs='+',            required=True,                               help="Neural Network structure.\n")
     prs.add_argument('-w',              dest='weights',       required=False, default=None,                help="Initial weights.\n")
-    prs.add_argument('-alpha',          dest='alpha',         required=False, default=0.01,                help="Learning rate.\n", type=float)
+    prs.add_argument('-alpha',          dest='alpha',         required=False, default=0.001,               help="Learning rate.\n", type=float)
     prs.add_argument('-beta',           dest='beta',          required=False, default=0.9,                 help="Efective direction rate used on the Momentum Method.\n", type=float)
     prs.add_argument('-regularization', dest='regularization',required=False, default=0.0,                 help="Regularization factor.\n", type=float)
     prs.add_argument("-numerical",      action='store_true',  required=False, default=False,               help="Calculate the gradients numerically.\n")
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         y = df.drop([c for c in df.columns if c.startswith('x')], axis=1).values
         class_values = None
     else:
-        normalized_df = parse_dataframe(df, class_column)
+        normalized_df = parse_dataframe(df, class_column, normalize='minmax')
         class_values = pd.get_dummies(df[class_column]).columns.values
 
     if args.nn[0].endswith('.txt'):
@@ -70,5 +70,6 @@ if __name__ == '__main__':
         if args.data.endswith('.txt'):
             nn.train(x, y, x, y)
         else:
-            log_name = 'logs/{}_{}_a{}_{}'.format(os.path.basename(args.data), args.opt, args.alpha, args.nn) if args.log else None
+            log_name = 'logs/{}_{}_a{}_{}_mb{}_reg{}'.format(os.path.basename(args.data), args.opt, args.alpha, '-'.join(n for n in args.nn), 
+                                                            args.batch_size, args.regularization) if args.log else None
             stratified_k_cross_validation(nn, normalized_df, class_column, k=args.num_folds, log_name=log_name)
