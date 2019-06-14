@@ -1,6 +1,7 @@
 import numpy as np 
 from tqdm import tqdm
 from backpropagation.util import to_one_hot
+import copy
 
 
 def sigmoid(z):
@@ -107,24 +108,34 @@ class NN:
 
     def train_numerically(self, x, y):
         n = len(x)
-        batch_size = self.batch_size if self.batch_size is not None else n
-        num_batches = n // batch_size
-        batches_x = np.array_split(x, num_batches)
-        batches_y = np.array_split(y, num_batches)
         self.reset()
         for e in range(self.epochs):
-            epoch_loss = 0.0
-            for batch in range(num_batches):
-                sum_loss = 0.0
-                self.reset_grads()
-                true_batch_size = len(batches_x[batch])
-                for i in range(true_batch_size):
-                    xi, yi = batches_x[batch][i], batches_y[batch][i].reshape(-1,1)
-                    self.calculate_numerical_gradients(xi, yi)
-                self.add_regularization_to_grads(true_batch_size)
-                self.apply_grads()
-        print(self.gradients_as_strings())
-    
+            print('\nEpoch {}:'.format(e+1))
+            self.reset_grads()
+            print('Gradientes numericos:')
+            for i in range(n):
+                xi, yi = x[i], y[i].reshape(-1,1)
+                self.calculate_numerical_gradients(xi, yi)
+            self.add_regularization_to_grads(n)
+            print(self.gradients_as_strings())
+            numerical_grads = copy.deepcopy(self.grads)
+            self.reset_grads()
+            print('\nGradientes backpropagation:')
+            for i in range(n):
+                xi, yi = x[i], y[i].reshape(-1,1)
+                fx = self.propagate(xi)
+                self.backpropagate(fx, yi)
+            self.add_regularization_to_grads(n)
+            print(self.gradients_as_strings(), '\n')
+            self.print_grad_diff(numerical_grads, self.grads)
+            self.apply_grads()
+
+    def print_grad_diff(self, numerical, backpropagation):
+        for theta in range(len(numerical)):
+            mean_diff = np.mean(np.abs(numerical[theta] - backpropagation[theta]))
+            print('Erro entre grandiente via backprop e grandiente numerico para Theta%d: %.10f' %(theta+1, mean_diff))
+
+
     def calculate_numerical_gradients(self, x, y):
         epsilon = 1e-8
         for layer in range(len(self.weights)):
