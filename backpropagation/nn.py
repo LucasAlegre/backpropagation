@@ -123,7 +123,7 @@ class NN:
                     self.calculate_numerical_gradients(xi, yi)
                 self.add_regularization_to_grads(true_batch_size)
                 self.apply_grads()
-        print(self.grads)
+        print(self.gradients_as_strings())
     
     def calculate_numerical_gradients(self, x, y):
         epsilon = 1e-8
@@ -287,3 +287,11 @@ class NN:
 
     def view_architecture(self):
         pass
+
+    def gradients_as_strings(self):
+        return "\n".join(
+            ["; ".join(
+                [", ".join(["{:.5f}".format(w) for w in neuron])
+                 for neuron in layer]
+            ) for layer in self.grads]
+        )
