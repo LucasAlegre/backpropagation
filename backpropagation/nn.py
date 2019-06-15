@@ -10,8 +10,8 @@ def sigmoid(z):
 
 class NN:
 
-    def __init__(self, architecture, regularization_factor=0.0, initial_weights=None, alpha=0.001, verbose=False,
-                       optimizer='Adam', beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=None):
+    def __init__(self, architecture, regularization_factor=0.0, initial_weights=None, alpha=0.001, optimizer='Adam', 
+                 beta=0.9, class_column=None, class_values=None, epochs=100, batch_size=None):
         """Feedforward Neural Network
         
         Args:
@@ -19,8 +19,10 @@ class NN:
             regularization_factor (int, optional): Regularization Factor. Defaults to 0.
             initial_weights (str, optional): txt file with initial weights. If None, weights are sampled from N(0,1). Defaults to None.
             alpha (float, optional): Learning rate. Defaults to 0.001.
-            momentum (boolean, optional): Use or not the Momentum Method to correct weights. Defaults to True.
+            optimizer (str, optional): Which optimizer to user. ['SGD', 'Momentum', 'Adam']
             beta (float, optional): Efective direction rate used on the Momentum Method. Defaults to 0.9.
+            epochs (int, optional): Number of training epochs. Defaults to 100.
+            batch_size (int, optional): Size of mini-batch. Defaults to size of the complete dataset.
         """
         if type(architecture) is str:
             self.build_architecture_from_file(architecture)
@@ -32,7 +34,6 @@ class NN:
         self.alpha = alpha
         self.epochs = epochs
         self.batch_size = batch_size
-        self.verbose = verbose
         self.optimizer = optimizer
     
         self.reset()
@@ -134,7 +135,6 @@ class NN:
         for theta in range(len(numerical)):
             mean_diff = np.mean(np.abs(numerical[theta] - backpropagation[theta]))
             print('Erro entre grandiente via backprop e grandiente numerico para Theta%d: %.10f' %(theta+1, mean_diff))
-
 
     def calculate_numerical_gradients(self, x, y):
         epsilon = 1e-8
@@ -295,9 +295,6 @@ class NN:
             fileread = f.read().splitlines()
         self.regularization_factor = float(fileread[0])
         self.architecture = [int (x) for x in fileread[1:]]
-
-    def view_architecture(self):
-        pass
 
     def gradients_as_strings(self):
         return "\n".join(

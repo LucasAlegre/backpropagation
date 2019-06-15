@@ -5,18 +5,25 @@ import brewer2mpl
 import seaborn as sns
 import argparse
 import glob
+from itertools import cycle
 
 sns.set(rc={'figure.figsize':(12,9)})
 sns.set(font_scale = 2)
 
-bmap = brewer2mpl.get_map('Set3', 'qualitative', 7)
+bmap = brewer2mpl.get_map('Set1', 'qualitative', 3)
 colors = bmap.mpl_colors
+colors = cycle(colors)
 
 prs = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 prs.add_argument('-f', nargs='+', required=False, help="csv file\n")
+prs.add_argument('-l', nargs='+', required=False, help="labels\n")
 args = prs.parse_args()
 
+labels = cycle(args.l)
+
 plt.figure()
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
 
 for file in args.f:
     main_df = pd.DataFrame()
@@ -31,13 +38,16 @@ for file in args.f:
     std_trainloss = main_df.groupby('epoch').std()['train-loss']
     mean_testloss = main_df.groupby('epoch').mean()['test-loss']
     std_testloss = main_df.groupby('epoch').std()['test-loss']
-
     epoch = main_df.groupby('epoch').epoch.mean().keys()
-    plt.plot(mean_trainloss)
-    plt.fill_between(epoch, mean_trainloss + std_trainloss, mean_trainloss - std_trainloss, alpha=0.3)
-    plt.plot(mean_testloss)
-    plt.fill_between(epoch, mean_testloss + std_testloss, mean_testloss - std_testloss, alpha=0.3)
+    cor = next(colors)
+    label = next(labels)
 
+    plt.plot(mean_trainloss, color=cor, linewidth=2, label='train loss'+label)
+    plt.fill_between(epoch, mean_trainloss + std_trainloss, mean_trainloss - std_trainloss, alpha=0.3, color=cor)
+    plt.plot(mean_testloss, color=cor, linestyle='--', linewidth=2, label='validation loss'+label)
+    plt.fill_between(epoch, mean_testloss + std_testloss, mean_testloss - std_testloss, alpha=0.3, color=cor)
+
+plt.legend()
 plt.show()
 
 """ 
