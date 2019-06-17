@@ -16,7 +16,7 @@ if __name__ == '__main__':
     prs.add_argument("-sep",            dest="sep",           required=False, default=',',                 help=".csv separator.\n")
     prs.add_argument("-k",              dest="num_folds",     required=False, default=10,                  help="The number of folds used on cross validation.\n", type=int)
     prs.add_argument("-e",              dest="epochs",        required=False, default=100,                 help="Amount of epochs for training the neural network.", type=int)
-    prs.add_argument("-mb",             dest="batch_size",    required=False, default=None,                help="Size of the batches for training.", type=int)
+    prs.add_argument("-mb",             dest="batch_size",    required=False, default=None,                help="Mini-batch size used for training.", type=int)
     prs.add_argument('-drop',           nargs='+',            required=False, default=[],                  help="Columns to drop from .csv.\n")
     prs.add_argument('-nn',             nargs='+',            required=True,                               help="Neural Network structure.\n")
     prs.add_argument('-w',              dest='weights',       required=False, default=None,                help="Initial weights.\n")

@@ -157,7 +157,6 @@ class NN:
                     # Update gradient
                     self.grads[layer][next_layer][neuron] += gradient
 
-
     def backpropagate(self, fx, y):
         """Computes gradients using backpropagation
         Args:
@@ -217,7 +216,7 @@ class NN:
 
     def apply_grads_with_momentum_method(self):
         self.z_directions *= self.beta
-        self.z_directions += (1 - self.beta) * self.grads
+        self.z_directions += self.grads
         self.weights -= self.alpha * self.z_directions
     
     def apply_grads_with_adam(self):
