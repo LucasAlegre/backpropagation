@@ -90,7 +90,6 @@ class NN:
                     sum_loss += self.cost(fx, yi)
                     self.backpropagate(fx, yi)
 
-                regularized_loss = sum_loss/true_batch_size + self.regularization_cost(true_batch_size)
                 epoch_loss += sum_loss
                 self.add_regularization_to_grads(true_batch_size)
                 self.apply_grads()

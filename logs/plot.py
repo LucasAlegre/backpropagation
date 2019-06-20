@@ -8,20 +8,21 @@ from itertools import cycle
 
 sns.set(rc={'figure.figsize':(12,9)}, font_scale=2, style='darkgrid')
 
-colors = sns.color_palette('colorblind', 3)
+colors = sns.color_palette('colorblind', 4)
 sns.set_palette(colors)
 colors = cycle(colors)
 
 prs = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 prs.add_argument('-f', nargs='+', required=False, help="csv file\n")
 prs.add_argument('-l', nargs='+', required=False, help="labels\n")
+prs.add_argument('-n', required=False, help='name\n')
 args = prs.parse_args()
 
 labels = cycle(args.l)
 
 plt.figure()
 plt.xlabel("Epoch")
-plt.ylabel("Loss")
+plt.ylabel("Cross-entropy loss")
 
 boxplots = []
 for file in args.f:
@@ -47,8 +48,11 @@ for file in args.f:
     plt.fill_between(epoch, mean_trainloss + std_trainloss, mean_trainloss - std_trainloss, alpha=0.3, color=cor)
     plt.plot(mean_testloss, linestyle='--', linewidth=2, label=label + ' validation loss', color=cor)
     plt.fill_between(epoch, mean_testloss + std_testloss, mean_testloss - std_testloss, alpha=0.3, color=cor)
+plt.ylim([0,5])
 plt.legend()
+plt.savefig(args.n+'plot.pdf', bbox_inches='tight')
 plt.show()
+
 
 ## Boxplots F1-score
 boxplots = pd.DataFrame(boxplots)
@@ -57,8 +61,8 @@ ax = plt.subplots()
 ax = sns.boxplot(x='x', y='y', data=boxplots, linewidth=2.5)
 ax = sns.swarmplot(x='x', y='y', data=boxplots, color=".2", size=6)
 
-ax.set(xlabel='Number of Trees', ylabel='F1 score')
+ax.set(xlabel='Architecture', ylabel='F1 score')
+plt.ylim([0.6,1.001])
 
+plt.savefig(args.n+'boxplot.pdf', bbox_inches='tight')
 plt.show()
-
-#ax.get_figure().savefig('results/{}'.format(f[0]) + '.pdf', bbox_inches='tight') """
