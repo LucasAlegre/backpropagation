@@ -1,6 +1,8 @@
 # Backpropagation
 
-Implementation of a fully connected neural network from scratch using numpy. 
+Implementation of a fully connected neural network from scratch using numpy.
+
+Stratified k-cross validation and SGD, Momentum and Adam optimizers implemented.
 
 Project report for UFRGS INF01017 Aprendizado de Máquina (Machine Learning) – 2019/1 [Relatório.pdf](https://github.com/LucasAlegre/backpropagation/blob/master/Relat%C3%B3rio.pdf).
 
