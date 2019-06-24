@@ -2,7 +2,7 @@
 
 Implementation of a fully connected neural network from scratch using numpy. 
 
-Project report for UFRGS INF01017 Aprendizado de Máquina (Machine Learning) – 2019/1 [Relatório.pdf](https://github.com/LucasAlegre/random-forest/blob/master/Relatório.pdf).
+Project report for UFRGS INF01017 Aprendizado de Máquina (Machine Learning) – 2019/1 [Relatório.pdf](https://github.com/LucasAlegre/backpropagation/blob/master/Relat%C3%B3rio.pdf).
 
 ## Install Requirements
 
